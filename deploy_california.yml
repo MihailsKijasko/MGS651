@@ -1,27 +1,58 @@
 ---
-- hosts: webservers
-  become: true
+- name: Deploy Web servers
+  hosts: webservers
   vars:
-    http_host: "mydomain.local"
-    http_conf: "my_domain.conf"
-    http_port: "80"
+      http_host: "mydomain.local"
+      http_conf: "my_domain.conf"
+      http_port: "80"
+
+#  tasks:
+#  - name: Install latest version of Apache
+#    apt: name=apache2 update_cache=yes state=latest
+#
+#  - name: Create document root for your domain
+#    file:
+#        path: "/var/www/california"
+#        state: directory
+#        owner: "www-data"
+#        mode: '0755'
+
+#  - name: Copy california files
+#    copy:
+#        src: "/root/php_files/"
+#        dest: "/var/www/html/"
+
+#  handlers:
+#  - name: restart-apache
+#    service:
+#           name: apache2
+#           state: restarted
+
+- name: Deploy Nginx
+  hosts: loadbalancers
+
   tasks:
-    - name: Install latest version of Apache
-      apt: name=apache2 update_cache=yes state=latest
 
-    - name: Create document root for your domain
-      file:
-        path: "/var/www/california"
-        state: directory
-        owner: "www-data"
-        mode: '0755'
-    - name: Copy california files
-      copy:
-        src: "/root/php_files/"
-        dest: "/var/www/html/"
+  - name: Install latest version of Nginx
+    apt: name=nginx state=latest
 
-  handlers:
-    - name: restart-apache
-      service:
-        name: apache2
+  - name: Start Nginx
+    service:
+        name: nginx
+        state: started
+
+  - name: Copy the Nginx config file and restart nginx
+    copy:
+        src: "./nginx/nginx.cfg"
+        dest: "/etc/nginx/sites-available/nginx.cfg"
+
+  - name: Create symlink
+    file:
+        src: "/etc/nginx/sites-available/nginx.cfg"
+        dest: "/etc/nginx/sites-enabled/default"
+        state: link
+
+  - name: Restart nginx
+    service:
+        name: nginx
         state: restarted
